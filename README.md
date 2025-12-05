@@ -8,7 +8,7 @@ This repository contains examples of generated Human-Centric natural language ex
 
 The main entrypoint for the NLE generation loads a Hugging Face model with 4‑bit quantization (optionally) via BitsAndBytes, ingests the alert/SHAP events and builds the RAG index. The alert to analyze will be used to retrieve similar past alerts to augment the LLM's input. Then SHAP contributions are then visualized and the NLE is generated and presented to the user via a CLI text-box. Finally, the user can keep asking questions about the analyzed alert using the provided chatbot CLI interface. 
 
-![Full Pipeline](pipeline.png "Full Pipeline")
+![Full Pipeline](chatbot.png "Full Pipeline")
 
 ## Evaluation Data
 
