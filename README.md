@@ -2,7 +2,7 @@
 
 This repository contains examples of generated Human-Centric natural language explanations (NLEs) of explainable AI outputs. The system combines deep autoencoder-based anomaly detection, SHAP feature attribution for explainability, and large language models (LLMs) to produce concise, actionable explanations for SOC analysts. Three prompting strategies are compared: zero-shot, contextualized, and a novel HITL (Human-in-the-Loop) approach using Retrieval-Augmented Generation (RAG) with a database of human-validated alerts. The following picture shows the complete architecture:
 
-![Full Architecture](full_arch.png "Full Architecture")
+![Full Architecture](pipeline.png "Full Architecture")
 
 ## ChatBot
 
