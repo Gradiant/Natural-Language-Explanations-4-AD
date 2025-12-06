@@ -2,10 +2,10 @@
 
 This repository contains examples of generated Human-Centric natural language explanations (NLEs) of explainable AI outputs. The system combines deep autoencoder-based anomaly detection, SHAP feature attribution for explainability, and large language models (LLMs) to produce concise, actionable explanations for SOC analysts. Three prompting strategies are compared: zero-shot, contextualized, and a novel HITL (Human-in-the-Loop) approach using Retrieval-Augmented Generation (RAG) with a database of human-validated alerts. The adopted methodology is structured into five distinct phases:
 
-1. **Data Analysis & Preprocessing**: Network traffic from enterprise cloud services and internal subnets is aggregated via a Citrix gateway and normalized through a Flow Extractor Pipeline.
+1. **Data Analysis & Preprocessing**: Network traffic from enterprise cloud services and internal subnets is aggregated via a Citrix gateway and normalized through a flow extractor pipeline.
 2. **Anomaly Detection**: An Autoencoder architecture is utilized to process the flow data and predict potential irregularities.
 3. **SHAP Integration**: Represented as Feature Influence Analysis, this phase extracts specific feature importances to interpret the model's predictions.
-4. **Human-Centered Explanations**: A LLM augmented by a Retrieval-Augmented Generation (RAG) database containing historical alert data and context—synthesizes technical feature data into coherent narratives.
+4. **Human-Centered Explanations**: A LLM augmented by a RAG database containing historical alert data and context—synthesizes technical feature data into coherent narratives.
 5. **NLE Alignment**: An interactive feedback loop is established, allowing SOC analysts to review and refine the generated alerts, which are then fed back into the RAG database as reviewed instances for refinement.
 
 ![Full Architecture](pipeline.png "Full Architecture")
@@ -45,7 +45,7 @@ Below is an overview of the complete pipeline. This summary breaks down how aler
       }
     }
     ```
-4. **NLE Generation** (HITL & RAG Strategy): The core of the system is the Human-in-the-Loop (HITL) strategy using RAG. The LLM generates the explanation by combining three distinct inputs:
+4. **NLE Generation** (HITL & RAG Strategy): The core of the system is the HITL strategy using RAG. The LLM generates the explanation by combining three distinct inputs:
 - **Prediction analysis**: The JSON output from the Autoencoder and SHAP (the errors and feature influences).
 - **Feature Definitions**: Static context explaining what `Fwd Seg Size Min` or `FIN Flag Cnt` to guide the LLM.
 - **Similar Past Responses**: The system queries a database to retrieve `k` similar alerts that have been previously validated or written by human analysts.
