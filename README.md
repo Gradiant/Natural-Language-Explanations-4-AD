@@ -1,8 +1,62 @@
 # NLE generation for security alerts
 
-This repository contains examples of generated Human-Centric natural language explanations (NLEs) of explainable AI outputs. The system combines deep autoencoder-based anomaly detection, SHAP feature attribution for explainability, and large language models (LLMs) to produce concise, actionable explanations for SOC analysts. Three prompting strategies are compared: zero-shot, contextualized, and a novel HITL (Human-in-the-Loop) approach using Retrieval-Augmented Generation (RAG) with a database of human-validated alerts. The following picture shows the complete architecture:
+This repository contains examples of generated Human-Centric natural language explanations (NLEs) of explainable AI outputs. The system combines deep autoencoder-based anomaly detection, SHAP feature attribution for explainability, and large language models (LLMs) to produce concise, actionable explanations for SOC analysts. Three prompting strategies are compared: zero-shot, contextualized, and a novel HITL (Human-in-the-Loop) approach using Retrieval-Augmented Generation (RAG) with a database of human-validated alerts. The adopted methodology is structured into five distinct phases:
+
+1. **Data Analysis & Preprocessing**: Network traffic from enterprise cloud services and internal subnets is aggregated via a Citrix gateway and normalized through a Flow Extractor Pipeline.
+2. **Anomaly Detection**: An Autoencoder architecture is utilized to process the flow data and predict potential irregularities.
+3. **SHAP Integration**: Represented as Feature Influence Analysis, this phase extracts specific feature importances to interpret the model's predictions.
+4. **Human-Centered Explanations**: A LLM augmented by a Retrieval-Augmented Generation (RAG) database containing historical alert data and context—synthesizes technical feature data into coherent narratives.
+5. **NLE Alignment**: An interactive feedback loop is established, allowing SOC analysts to review and refine the generated alerts, which are then fed back into the RAG database as reviewed instances for refinement.
 
 ![Full Architecture](pipeline.png "Full Architecture")
+
+Below is an overview of the complete pipeline. This summary breaks down how alerts are detected, analyzed, and converted into NLEs. It highlights how the system leverages feedback from human experts to continuously improve the quality and accuracy of its generated reports.
+
+1. **Data Analysis & Preprocessing**: The process begins with the raw network traffic data:
+    ```
+    443.0,6.0,117501443.00004105,7.0,7.000000000000001,487.0,326.0,349.0,0.0,69.57142857,125.3446677,111.0,0.0,46.57142857,39.61421101,6.919063964000088,0.11914747299998396,9038572.538003288,21900000.0,58899999.99996764,6.999965038699884,118000000.00002055,19600000.000040714,30200000.0,58900000.000043,17668.9999509371,117000000.0,19600000.0,30200000.0,59099999.99999999,16.0,1.0,140.0,140.0,0.05957373599999727,0.05957373599999993,0.0,349.0,77.46666667,114.8078312,13180.8381,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,83.0,69.57142857,46.57142857,7.0,487.0,7.000000000000001,326.0,258.0,193.0,2.9999999999999996,20.0,202210.5,65464.65291,248501.0,155920.0,58500000.0,614373.2624,58900000.0,58000000.0
+    ```
+    Network traffic flows are **captured and aggregated**. These values pass through a **Flow Extractor Pipeline** to be normalized into the format required by the model.
+2. **Anomaly Detection**: The normalized data is fed into a Deep Autoencoder.
+  - Reconstruction: The model attempts to reconstruct the input data.
+  - Flagging: The system calculates the reconstruction error (the difference between the input and the reconstruction). If this error exceeds a specific threshold, the flow is flagged as an anomaly.
+
+    The system detects high errors in features like `Fwd Seg Size Min` (Error: ~0.16) and `Protocol` (Error: ~0.11).
+3. **SHAP Analysis**: Once flagged, SHAP is triggered to determine why the anomaly occurred. It calculates the contribution of specific features to the reconstruction error of each feature.
+    ```json
+    {
+      "Fwd Seg Size Min":{
+          "Dst Port":-8.790133595352944e-06,
+          "Protocol":2.5779408450221268e-06,
+          "Flow Duration":9.724989567087246e-06,
+          "Reconstruction Error":0.16075632572466603
+      },
+      "Protocol":{
+          "PSH Flag Cnt":0.00033647298133254733,
+          "Dst Port":5.30024234092454e-06,
+          "Flow Duration":-7.196215675902855e-06,
+          "Reconstruction Error":0.11037927298176371
+      },
+      "Init Fwd Win Byts":{
+          "Dst Port":8.311301486884673e-06,
+          "Protocol":1.8031827240293408e-06,
+          "Flow Duration":-1.662190975744678e-07,
+          "Reconstruction Error":0.015642140742638866
+      }
+    }
+    ```
+4. **NLE Generation** (HITL & RAG Strategy): The core of the system is the Human-in-the-Loop (HITL) strategy using RAG. The LLM generates the explanation by combining three distinct inputs:
+- **Prediction analysis**: The JSON output from the Autoencoder and SHAP (the errors and feature influences).
+- **Feature Definitions**: Static context explaining what `Fwd Seg Size Min` or `FIN Flag Cnt` to guide the LLM.
+- **Similar Past Responses**: The system queries a database to retrieve `k` similar alerts that have been previously validated or written by human analysts.
+5. **NLE Alignment & Feedback Loop** (The Correction Mechanism): This is the final and most critical phase for the alignment aspect of the system:
+- The generated NLE is presented to the SOC analyst via a ChatBot/CLI interface.
+- The analyst reviews the explanation. If the AI's explanation is vague, inaccurate, or stylistically wrong, the analyst can edit or refine the text.
+- The refined/corrected explanation is fed back into the RAG database.
+
+    The next time the system encounters a similar anomaly, the RAG component will retrieve the analyst's corrected version as a "Similar Past Response". The LLM will use this corrected example as a template, ensuring the new explanation mimics the higher quality and accuracy of the human-refined version. 
+    
+    This creates a **feedback loop** where the AI's output becomes more **aligned with analysts** over time.
 
 ## ChatBot
 
@@ -190,7 +244,7 @@ The current alert has been triggered due to the anomalous behavior in the packet
 * Protocol (`Protocol') - Reconstruction Error: 0.108782 (Notable Anomaly):
     * Core Observation: The protocol observed, or its manner of use, deviated from expected behavior. Even if a common protocol is used, this error suggests that the protocol usage in this context is anomalous.
     * Influence of Flow Duration (`Flow Duration') - SHAP-like Contribution to `Protocol' Anomaly: 0.005647 (Significant). The observation that `Flow Duration' shows a significant SHAP-like contribution to the anomaly in `Protocol' suggests that the flow duration is an important factor in this deviation. This could imply that the duration of the flow is unusually long or short, depending on the typical patterns for the specific protocol.
-    * Influence of Protocol (Self-Reference/Base Anomaly): The primary reason this feature is flagged is its own reconstruction error. The consistent use of a particular protocol is expected; however, the high RE of `0.108782' implies that this ""consistent"" use is happening in a way that our model deems abnormal.
+    * Influence of Protocol (Self-Reference/Base Anomaly): The primary reason this feature is flagged is its own reconstruction error. The consistent use of a particular protocol is expected; however, the high RE of `0.108782' implies that this consistent use is happening in a way that our model deems abnormal.
     * Influence of Backward Inter-Arrival Time (`Bwd IAT Tot' and `Bwd IAT Mean') - SHAP-like Contribution to `Protocol' Anomaly: 0.003146 and 0.000609 (Minor but Present). Certain irregularities in the backward traffic timing might suggest that the protocol handling is not as expected, indirectly contributing to the anomaly in the protocol feature.
 
 * Destination Port (`Dst Port') - Reconstruction Error: 0.019345 (Low Anomaly):
